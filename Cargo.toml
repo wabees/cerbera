@@ -1,0 +1,21 @@
+[package]
+name = "cerbera"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "fanotify-based sentinel that blocks unauthorized access to credential files (browser profiles, password managers, SSH keys)."
+readme = "README.md"
+repository = "https://github.com/wabees/cerbera"
+homepage = "https://cerbera.io"
+keywords = ["security", "fanotify", "credentials", "linux", "monitoring"]
+categories = ["command-line-utilities", "os::linux-apis"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+nix = { version = "0.29", features = ["fanotify"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

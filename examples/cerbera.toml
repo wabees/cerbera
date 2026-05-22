@@ -1,0 +1,48 @@
+# cerbera example configuration.
+#
+# Each [[watch]] entry defines a path to monitor and the process names
+# that are allowed to access it. Any other process triggers a warning
+# (v0.1 watch-only) or will be blocked (v1.0+ enforce).
+#
+# Process matching is a substring match against /proc/PID/comm
+# (16-byte TASK_COMM_LEN). e.g. "chrome" matches "chrome", "chrome-stable".
+
+[[watch]]
+name = "chromium-profile"
+path = "~/.config/chromium/Default"
+allow_processes = ["chrome", "chromium"]
+recursive = true
+
+[[watch]]
+name = "chrome-profile"
+path = "~/.config/google-chrome/Default"
+allow_processes = ["chrome"]
+recursive = true
+
+[[watch]]
+name = "firefox-profiles"
+path = "~/.mozilla/firefox"
+allow_processes = ["firefox", "Web Content", "Isolated Web Co"]
+recursive = true
+
+[[watch]]
+name = "keepassxc-db"
+path = "~/Documents/secrets.kdbx"
+allow_processes = ["keepassxc"]
+
+[[watch]]
+name = "ssh-keys"
+path = "~/.ssh"
+allow_processes = ["ssh", "ssh-agent", "git", "scp", "sftp", "ssh-add"]
+recursive = true
+
+[[watch]]
+name = "aws-credentials"
+path = "~/.aws/credentials"
+allow_processes = ["aws", "terraform"]
+
+[[watch]]
+name = "gh-config"
+path = "~/.config/gh"
+allow_processes = ["gh"]
+recursive = true
