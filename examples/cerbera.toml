@@ -4,37 +4,43 @@
 # allowed to access it. Any other process triggers a warning (v0.1
 # watch-only) or will be blocked (v1.0+ enforce).
 #
+# path: absolute path required. ~ is not supported.
+#   Replace /home/alice with the actual user's home directory.
+#   Use `cerbera learn` (coming in v0.3) to auto-generate this file.
+#
 # allow_processes: full executable paths as resolved by /proc/PID/exe.
-# Use `readlink /proc/$$/exe` or `which <cmd>` to find the right path.
-# Paths vary by distro and install method (apt, snap, flatpak, etc.).
+#   Use `readlink /proc/$$/exe` or `which <cmd>` to find the right path.
+#   Paths vary by distro and install method (apt, snap, flatpak, etc.).
+
+[[watch]]
+name = "keepassxc-db"
+path = "/home/alice/secrets.kdbx"
+allow_processes = ["/usr/bin/keepassxc"]
 
 [[watch]]
 name = "chromium-profile"
-path = "~/.config/chromium/Default"
+path = "/home/alice/.config/chromium/Default"
 allow_processes = ["/usr/bin/chromium"]
 recursive = true
 
 [[watch]]
 name = "chrome-profile"
-path = "~/.config/google-chrome/Default"
+path = "/home/alice/.config/google-chrome/Default"
 allow_processes = ["/opt/google/chrome/chrome"]
 recursive = true
 
 [[watch]]
 name = "firefox-profiles"
-path = "~/.mozilla/firefox"
+path = "/home/alice/.mozilla/firefox"
 # Firefox subprocesses (Web Content, RDD, etc.) all share the same exe.
+# Note: profile dirs contain a random suffix (e.g. ab12cd34.default-release).
+# Glob support for paths is planned — for now, watch the parent directory.
 allow_processes = ["/usr/lib/firefox/firefox"]
 recursive = true
 
 [[watch]]
-name = "keepassxc-db"
-path = "~/Documents/secrets.kdbx"
-allow_processes = ["/usr/bin/keepassxc"]
-
-[[watch]]
 name = "ssh-keys"
-path = "~/.ssh"
+path = "/home/alice/.ssh"
 allow_processes = [
     "/usr/bin/ssh",
     "/usr/bin/ssh-agent",
@@ -47,11 +53,11 @@ recursive = true
 
 [[watch]]
 name = "aws-credentials"
-path = "~/.aws/credentials"
+path = "/home/alice/.aws/credentials"
 allow_processes = ["/usr/bin/aws", "/usr/bin/terraform"]
 
 [[watch]]
 name = "gh-config"
-path = "~/.config/gh"
+path = "/home/alice/.config/gh"
 allow_processes = ["/usr/bin/gh"]
 recursive = true

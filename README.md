@@ -26,17 +26,17 @@ sudo cerbera run --config ~/.config/cerbera/cerbera.toml
 ```toml
 [[watch]]
 name = "ssh-keys"
-path = "~/.ssh"
+path = "/home/alice/.ssh"
 allow_processes = ["/usr/bin/ssh", "/usr/bin/ssh-agent", "/usr/bin/git"]
 recursive = true
 
 [[watch]]
-name = "browser-profile"
-path = "~/.config/chromium/Default"
-allow_processes = ["/usr/bin/chromium"]
-recursive = true
+name = "keepassxc-db"
+path = "/home/alice/secrets.kdbx"
+allow_processes = ["/usr/bin/keepassxc"]
 ```
 
+`path` must be an absolute path (`~` is not supported).
 `allow_processes` entries are full executable paths matched against `/proc/PID/exe`.
 Use `readlink /proc/$$/exe` or `which <cmd>` to find the correct path on your system.
 

@@ -34,18 +34,12 @@ impl Config {
 
 impl Watch {
     pub fn resolved_path(&self) -> Result<PathBuf> {
-        expand_home(&self.path)
+        if self.path.starts_with('~') {
+            anyhow::bail!(
+                "watch `{}`: `~` is not supported — use an absolute path (e.g. /home/username/...)",
+                self.name
+            );
+        }
+        Ok(PathBuf::from(&self.path))
     }
-}
-
-fn expand_home(raw: &str) -> Result<PathBuf> {
-    if raw == "~" {
-        let home = std::env::var("HOME").context("HOME not set, cannot expand `~`")?;
-        return Ok(PathBuf::from(home));
-    }
-    if let Some(rest) = raw.strip_prefix("~/") {
-        let home = std::env::var("HOME").context("HOME not set, cannot expand `~/`")?;
-        return Ok(Path::new(&home).join(rest));
-    }
-    Ok(PathBuf::from(raw))
 }
