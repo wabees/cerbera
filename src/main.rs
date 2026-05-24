@@ -18,10 +18,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    /// Start monitoring. Watch-only mode: unauthorized access is logged, not blocked.
+    /// Start monitoring. Unauthorized access is blocked by default (enforce mode).
     Run {
         #[arg(long, short)]
         config: PathBuf,
+        /// Log unauthorized access but do not block it.
+        #[arg(long)]
+        watch_only: bool,
     },
     /// Observe accesses to watched paths and generate an allow-list config.
     Learn {
@@ -45,7 +48,7 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
     match cli.command {
-        Cmd::Run { config } => run(config),
+        Cmd::Run { config, watch_only } => run(config, watch_only),
         Cmd::Learn { config, duration, output } => {
             let cfg = config::Config::load(&config)?;
             learn::run_learn(&cfg, Duration::from_secs(duration), output.as_deref())
@@ -53,7 +56,7 @@ fn main() -> Result<()> {
     }
 }
 
-fn run(config_path: PathBuf) -> Result<()> {
+fn run(config_path: PathBuf, watch_only: bool) -> Result<()> {
     let cfg = config::Config::load(&config_path)?;
     tracing::info!(watches = cfg.watches.len(), "loaded config");
 
@@ -64,7 +67,13 @@ fn run(config_path: PathBuf) -> Result<()> {
     }
 
     let index = event::AllowIndex::from_watches(&cfg.watches)?;
+    let mode = if watch_only {
+        tracing::warn!("MODE: watch-only — unauthorized access is logged but not blocked");
+        event::Mode::WatchOnly
+    } else {
+        tracing::warn!("MODE: enforce — unauthorized access will be blocked (FAN_DENY)");
+        event::Mode::Enforce
+    };
 
-    tracing::warn!("MODE: watch-only — access is always allowed; only logging");
-    event::run_loop(&watcher, &index)
+    event::run_loop(&watcher, &index, mode)
 }

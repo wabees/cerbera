@@ -7,6 +7,11 @@ use tracing::{info, warn};
 use crate::config::Watch;
 use crate::watcher::Watcher;
 
+pub enum Mode {
+    Enforce,
+    WatchOnly,
+}
+
 pub struct AllowIndex {
     entries: Vec<(PathBuf, Vec<PathBuf>)>,
 }
@@ -43,16 +48,16 @@ impl AllowIndex {
     }
 }
 
-pub fn run_loop(watcher: &Watcher, index: &AllowIndex) -> Result<()> {
+pub fn run_loop(watcher: &Watcher, index: &AllowIndex, mode: Mode) -> Result<()> {
     loop {
         let events = watcher.group.read_events()?;
         for ev in events {
-            handle_event(watcher, index, &ev);
+            handle_event(watcher, index, &mode, &ev);
         }
     }
 }
 
-fn handle_event(watcher: &Watcher, index: &AllowIndex, ev: &FanotifyEvent) {
+fn handle_event(watcher: &Watcher, index: &AllowIndex, mode: &Mode, ev: &FanotifyEvent) {
     let Some(fd) = ev.fd() else {
         warn!("fanotify queue overflow");
         return;
@@ -71,7 +76,15 @@ fn handle_event(watcher: &Watcher, index: &AllowIndex, ev: &FanotifyEvent) {
             pid,
             path = %file_path.display(),
             ?mask,
-            "access"
+            "access allowed"
+        );
+    } else if matches!(mode, Mode::Enforce) {
+        warn!(
+            exe = ?exe_path,
+            pid,
+            path = %file_path.display(),
+            ?mask,
+            "BLOCKED unauthorized access"
         );
     } else {
         warn!(
@@ -86,9 +99,13 @@ fn handle_event(watcher: &Watcher, index: &AllowIndex, ev: &FanotifyEvent) {
     if mask.intersects(
         MaskFlags::FAN_OPEN_PERM | MaskFlags::FAN_ACCESS_PERM | MaskFlags::FAN_OPEN_EXEC_PERM,
     ) {
-        let response = FanotifyResponse::new(fd, Response::FAN_ALLOW);
+        let response = if !allowed && matches!(mode, Mode::Enforce) {
+            FanotifyResponse::new(fd, Response::FAN_DENY)
+        } else {
+            FanotifyResponse::new(fd, Response::FAN_ALLOW)
+        };
         if let Err(e) = watcher.group.write_response(response) {
-            warn!(error = %e, "failed to write FAN_ALLOW response");
+            warn!(error = %e, "failed to write fanotify response");
         }
     }
 }
