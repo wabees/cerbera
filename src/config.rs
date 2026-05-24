@@ -1,22 +1,25 @@
 use anyhow::{Context, Result, anyhow};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     #[serde(default, rename = "watch")]
     pub watches: Vec<Watch>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Watch {
     pub name: String,
     pub path: String,
     #[serde(default)]
     pub allow_processes: Vec<String>,
-    #[serde(default)]
-    #[allow(dead_code)]
+    #[serde(default, skip_serializing_if = "is_false")]
     pub recursive: bool,
+}
+
+fn is_false(b: &bool) -> bool {
+    !b
 }
 
 impl Config {
