@@ -27,15 +27,18 @@ sudo cerbera run --config ~/.config/cerbera/cerbera.toml
 [[watch]]
 name = "ssh-keys"
 path = "~/.ssh"
-allow_processes = ["ssh", "ssh-agent", "git"]
+allow_processes = ["/usr/bin/ssh", "/usr/bin/ssh-agent", "/usr/bin/git"]
 recursive = true
 
 [[watch]]
 name = "browser-profile"
 path = "~/.config/chromium/Default"
-allow_processes = ["chromium", "chrome"]
+allow_processes = ["/usr/bin/chromium"]
 recursive = true
 ```
+
+`allow_processes` entries are full executable paths matched against `/proc/PID/exe`.
+Use `readlink /proc/$$/exe` or `which <cmd>` to find the correct path on your system.
 
 ## License
 

@@ -8,20 +8,21 @@ use crate::config::Watch;
 use crate::watcher::Watcher;
 
 pub struct AllowIndex {
-    entries: Vec<(PathBuf, Vec<String>)>,
+    entries: Vec<(PathBuf, Vec<PathBuf>)>,
 }
 
 impl AllowIndex {
     pub fn from_watches(watches: &[Watch]) -> Result<Self> {
         let mut entries = Vec::with_capacity(watches.len());
         for w in watches {
-            entries.push((w.resolved_path()?, w.allow_processes.clone()));
+            let paths = w.allow_processes.iter().map(PathBuf::from).collect();
+            entries.push((w.resolved_path()?, paths));
         }
         Ok(Self { entries })
     }
 
-    fn allows(&self, file_path: &Path, process_name: &str) -> bool {
-        let mut best: Option<&Vec<String>> = None;
+    fn allows(&self, file_path: &Path, exe_path: Option<&Path>) -> bool {
+        let mut best: Option<&Vec<PathBuf>> = None;
         let mut best_len = 0usize;
         for (root, allow) in &self.entries {
             if file_path.starts_with(root) {
@@ -33,7 +34,10 @@ impl AllowIndex {
             }
         }
         match best {
-            Some(allow) => allow.iter().any(|p| process_name.contains(p.as_str())),
+            Some(allow) => match exe_path {
+                Some(exe) => allow.iter().any(|p| p == exe),
+                None => false,
+            },
             None => true,
         }
     }
@@ -56,14 +60,14 @@ fn handle_event(watcher: &Watcher, index: &AllowIndex, ev: &FanotifyEvent) {
 
     let file_path = resolve_fd_path(fd).unwrap_or_else(|| PathBuf::from("<unknown>"));
     let pid = ev.pid();
-    let proc_name = read_comm(pid).unwrap_or_else(|| "<unknown>".into());
+    let exe_path = read_exe(pid);
     let mask = ev.mask();
 
-    let allowed = index.allows(&file_path, &proc_name);
+    let allowed = index.allows(&file_path, exe_path.as_deref());
 
     if allowed {
         info!(
-            process = %proc_name,
+            exe = ?exe_path,
             pid,
             path = %file_path.display(),
             ?mask,
@@ -71,7 +75,7 @@ fn handle_event(watcher: &Watcher, index: &AllowIndex, ev: &FanotifyEvent) {
         );
     } else {
         warn!(
-            process = %proc_name,
+            exe = ?exe_path,
             pid,
             path = %file_path.display(),
             ?mask,
@@ -93,7 +97,6 @@ fn resolve_fd_path(fd: BorrowedFd<'_>) -> Option<PathBuf> {
     std::fs::read_link(format!("/proc/self/fd/{}", fd.as_raw_fd())).ok()
 }
 
-fn read_comm(pid: i32) -> Option<String> {
-    let s = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok()?;
-    Some(s.trim().to_string())
+fn read_exe(pid: i32) -> Option<PathBuf> {
+    std::fs::read_link(format!("/proc/{pid}/exe")).ok()
 }
