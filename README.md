@@ -104,9 +104,44 @@ recursive = true                                     # mark subdirectories (defa
 
 | Command | Description |
 |---|---|
-| `cerbera run -c <config>` | Start enforcing. Blocks unauthorized access by default. |
+| `cerbera run -c <config> [-c <config>...]` | Start enforcing. Blocks unauthorized access by default. |
 | `cerbera run -c <config> --watch-only` | Log violations only — do not block. |
-| `cerbera learn -c <config> [-d <secs>] [-o <file>]` | Observe accesses and generate an allow-list config. |
+| `cerbera learn -c <config> [-c <config>...] [-d <secs>] [-o <file>]` | Observe accesses and generate an allow-list config. |
+
+## Composing multiple config files
+
+`--config` (`-c`) can be passed multiple times. cerbera merges all files before starting:
+- Watch entries with the **same path** are merged: `allow_processes` lists are unioned and deduplicated, `recursive = true` in any file wins.
+- Watch entries with **different paths** are kept as separate watches.
+
+This lets you separate OS-level presets from personal paths:
+
+```
+/etc/cerbera/
+  debian.toml     ← system paths, maintained by you or shared
+  home.toml       ← personal credential paths, portable across machines
+```
+
+```toml
+# debian.toml — which binaries are the legitimate owners on this distro
+[[watch]]
+name = "ssh-keys"
+path = "/home/alice/.ssh"
+allow_processes = ["/usr/bin/ssh", "/usr/bin/ssh-agent", "/usr/bin/git", "/usr/bin/scp"]
+
+# home.toml — what paths to protect (reusable on any machine)
+[[watch]]
+name = "ssh-keys"
+path = "/home/alice/.ssh"
+```
+
+```bash
+sudo cerbera run \
+  --config /etc/cerbera/debian.toml \
+  --config /home/alice/.config/cerbera/home.toml
+```
+
+The two `ssh-keys` entries are merged: `home.toml` declares the path to watch, `debian.toml` contributes the allowed processes. On a different distro (e.g. NixOS), swap `debian.toml` for `nixos.toml` — `home.toml` stays unchanged.
 
 ## Scope
 
