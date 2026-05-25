@@ -20,16 +20,18 @@ struct Cli {
 enum Cmd {
     /// Start monitoring. Unauthorized access is blocked by default (enforce mode).
     Run {
-        #[arg(long, short)]
-        config: PathBuf,
+        /// Config file(s) to load; multiple files are merged (allow_processes unioned per path).
+        #[arg(long, short, required = true)]
+        config: Vec<PathBuf>,
         /// Log unauthorized access but do not block it.
         #[arg(long)]
         watch_only: bool,
     },
     /// Observe accesses to watched paths and generate an allow-list config.
     Learn {
-        #[arg(long, short)]
-        config: PathBuf,
+        /// Config file(s) to load; multiple files are merged.
+        #[arg(long, short, required = true)]
+        config: Vec<PathBuf>,
         /// Observation duration in seconds.
         #[arg(long, short, default_value = "60")]
         duration: u64,
@@ -50,14 +52,14 @@ fn main() -> Result<()> {
     match cli.command {
         Cmd::Run { config, watch_only } => run(config, watch_only),
         Cmd::Learn { config, duration, output } => {
-            let cfg = config::Config::load(&config)?;
+            let cfg = config::Config::load_all(&config)?;
             learn::run_learn(&cfg, Duration::from_secs(duration), output.as_deref())
         }
     }
 }
 
-fn run(config_path: PathBuf, watch_only: bool) -> Result<()> {
-    let cfg = config::Config::load(&config_path)?;
+fn run(config_path: Vec<PathBuf>, watch_only: bool) -> Result<()> {
+    let cfg = config::Config::load_all(&config_path)?;
     tracing::info!(watches = cfg.watches.len(), "loaded config");
 
     let watcher = watcher::Watcher::new()?;
