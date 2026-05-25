@@ -1,0 +1,90 @@
+# Per-user credential protection. Portable across machines and distros.
+# Pair with an OS preset (debian.toml, arch.toml, etc.) for allowed process paths.
+#
+# Replace "alice" with your username throughout, or generate this file with:
+#   sudo cerbera learn --config home.toml --duration 300 --output home-learned.toml
+#
+# allow_processes here uses Debian paths as defaults.
+# The OS preset you load alongside this file will contribute additional entries
+# for the same paths via union merge.
+
+# ── SSH keys ───────────────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssh-keys"
+path = "/home/alice/.ssh"
+allow_processes = [
+    "/usr/bin/ssh",
+    "/usr/bin/ssh-agent",
+    "/usr/bin/ssh-add",
+    "/usr/bin/git",
+    "/usr/bin/scp",
+    "/usr/bin/sftp",
+]
+recursive = true
+
+# ── Browser profiles ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "firefox-profiles"
+path = "/home/alice/.mozilla/firefox"
+# Firefox subprocesses (Web Content, RDD, etc.) all resolve to the same exe.
+allow_processes = [
+    "/usr/lib/firefox/firefox",   # Debian/Ubuntu apt package
+    # "/usr/bin/firefox",         # some distros
+    # "/usr/lib64/firefox/firefox", # Fedora
+]
+recursive = true
+
+[[watch]]
+name = "chromium-profile"
+path = "/home/alice/.config/chromium/Default"
+allow_processes = [
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+]
+recursive = true
+
+[[watch]]
+name = "chrome-profile"
+path = "/home/alice/.config/google-chrome/Default"
+allow_processes = [
+    "/opt/google/chrome/chrome",
+]
+recursive = true
+
+# ── Password managers ──────────────────────────────────────────────────────────
+
+[[watch]]
+name = "keepassxc-db"
+path = "/home/alice/secrets.kdbx"
+allow_processes = [
+    "/usr/bin/keepassxc",
+]
+
+# ── Cloud / API credentials ────────────────────────────────────────────────────
+
+[[watch]]
+name = "aws-credentials"
+path = "/home/alice/.aws/credentials"
+allow_processes = [
+    "/usr/bin/aws",
+    "/usr/bin/terraform",
+]
+
+[[watch]]
+name = "gh-config"
+path = "/home/alice/.config/gh"
+allow_processes = [
+    "/usr/bin/gh",
+]
+recursive = true
+
+[[watch]]
+name = "gcloud-credentials"
+path = "/home/alice/.config/gcloud"
+allow_processes = [
+    "/usr/bin/gcloud",
+    "/usr/lib/google-cloud-sdk/bin/gcloud",
+]
+recursive = true

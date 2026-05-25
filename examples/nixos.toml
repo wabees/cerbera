@@ -1,0 +1,96 @@
+# OS-level protection for NixOS.
+# Covers system credential stores — not user home directories.
+# Pair with home.toml for per-user paths (SSH keys, browser profiles, etc.).
+#
+# !! IMPORTANT: NixOS executable paths include a content hash that changes on
+# every `nixos-rebuild switch`. Example:
+#   /nix/store/abc123...-openssh-9.7p1/bin/sshd
+#
+# Glob support in allow_processes is not yet implemented in cerbera.
+# Until it is, you must update the paths below after each rebuild:
+#
+#   readlink /proc/$(pgrep sshd | head -1)/exe
+#   readlink /proc/$(pgrep sudo | head -1)/exe
+#
+# Alternatively, run `cerbera learn` after each rebuild to regenerate this file.
+#
+# WARNING: /etc/shadow entries must include every binary that authenticates
+# users via PAM. A missing entry in enforce mode can lock users out.
+# Always validate with `--watch-only` first.
+
+# ── Password database ──────────────────────────────────────────────────────────
+
+[[watch]]
+name = "shadow"
+path = "/etc/shadow"
+# Replace the hashes below with the actual paths on your system.
+# Run: readlink /proc/$(pgrep unix_chkpwd | head -1)/exe
+allow_processes = [
+    # "/nix/store/<hash>-shadow-<version>/bin/passwd",
+    # "/nix/store/<hash>-shadow-<version>/bin/su",
+    # "/nix/store/<hash>-sudo-<version>/bin/sudo",
+    # "/nix/store/<hash>-shadow-<version>/bin/login",
+    # "/nix/store/<hash>-openssh-<version>/bin/sshd",
+    # "/nix/store/<hash>-pam-<version>/bin/unix_chkpwd",
+]
+
+[[watch]]
+name = "gshadow"
+path = "/etc/gshadow"
+allow_processes = [
+    # "/nix/store/<hash>-shadow-<version>/bin/passwd",
+    # "/nix/store/<hash>-shadow-<version>/bin/newgrp",
+    # "/nix/store/<hash>-shadow-<version>/bin/groupadd",
+    # "/nix/store/<hash>-shadow-<version>/bin/groupmod",
+]
+
+# ── Privilege escalation config ────────────────────────────────────────────────
+
+[[watch]]
+name = "sudoers"
+path = "/etc/sudoers"
+allow_processes = [
+    # "/nix/store/<hash>-sudo-<version>/bin/sudo",
+    # "/nix/store/<hash>-sudo-<version>/bin/visudo",
+]
+
+[[watch]]
+name = "sudoers-d"
+path = "/etc/sudoers.d"
+allow_processes = [
+    # "/nix/store/<hash>-sudo-<version>/bin/sudo",
+    # "/nix/store/<hash>-sudo-<version>/bin/visudo",
+]
+recursive = true
+
+# ── SSH host keys ──────────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssh-host-keys"
+path = "/etc/ssh"
+allow_processes = [
+    # "/nix/store/<hash>-openssh-<version>/bin/sshd",
+]
+recursive = true
+
+# ── TLS private keys ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssl-private"
+path = "/etc/ssl/private"
+allow_processes = [
+    # "/nix/store/<hash>-nginx-<version>/bin/nginx",
+]
+recursive = true
+
+# ── root credentials ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "root-ssh"
+path = "/root/.ssh"
+allow_processes = [
+    # "/nix/store/<hash>-openssh-<version>/bin/ssh",
+    # "/nix/store/<hash>-openssh-<version>/bin/ssh-agent",
+    # "/nix/store/<hash>-git-<version>/bin/git",
+]
+recursive = true

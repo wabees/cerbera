@@ -1,0 +1,92 @@
+# OS-level protection for Arch Linux (and Arch-based distros: Manjaro, EndeavourOS, etc.).
+# Covers system credential stores — not user home directories.
+# Pair with home.toml for per-user paths (SSH keys, browser profiles, etc.).
+#
+# On Arch, /usr/sbin is a symlink to /usr/bin — all binaries live under /usr/bin.
+# Verify paths with: readlink /proc/$(pgrep sshd | head -1)/exe
+#
+# WARNING: /etc/shadow entries must include every binary that authenticates
+# users via PAM. A missing entry in enforce mode can lock users out.
+# Always validate with `--watch-only` first.
+
+# ── Password database ──────────────────────────────────────────────────────────
+
+[[watch]]
+name = "shadow"
+path = "/etc/shadow"
+allow_processes = [
+    "/usr/bin/passwd",
+    "/usr/bin/su",
+    "/usr/bin/sudo",
+    "/usr/bin/login",
+    "/usr/bin/newgrp",
+    "/usr/bin/sshd",
+    "/usr/bin/unix_chkpwd",
+]
+
+[[watch]]
+name = "gshadow"
+path = "/etc/gshadow"
+allow_processes = [
+    "/usr/bin/passwd",
+    "/usr/bin/newgrp",
+    "/usr/bin/groupadd",
+    "/usr/bin/groupmod",
+]
+
+# ── Privilege escalation config ────────────────────────────────────────────────
+
+[[watch]]
+name = "sudoers"
+path = "/etc/sudoers"
+allow_processes = [
+    "/usr/bin/sudo",
+    "/usr/bin/visudo",
+]
+
+[[watch]]
+name = "sudoers-d"
+path = "/etc/sudoers.d"
+allow_processes = [
+    "/usr/bin/sudo",
+    "/usr/bin/visudo",
+]
+recursive = true
+
+# ── SSH host keys ──────────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssh-host-keys"
+path = "/etc/ssh"
+allow_processes = [
+    "/usr/bin/sshd",
+]
+recursive = true
+
+# ── TLS private keys ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssl-private"
+path = "/etc/ssl/private"
+# Add the processes that use your TLS certificates.
+# Run with --watch-only first to discover which processes access this path.
+allow_processes = [
+    # "/usr/bin/nginx",
+    # "/usr/bin/apache2",
+]
+recursive = true
+
+# ── root credentials ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "root-ssh"
+path = "/root/.ssh"
+allow_processes = [
+    "/usr/bin/ssh",
+    "/usr/bin/ssh-agent",
+    "/usr/bin/ssh-add",
+    "/usr/bin/git",
+    "/usr/bin/scp",
+    "/usr/bin/sftp",
+]
+recursive = true

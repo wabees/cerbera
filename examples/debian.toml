@@ -1,0 +1,96 @@
+# OS-level protection for Debian / Ubuntu.
+# Covers system credential stores — not user home directories.
+# Pair with home.toml for per-user paths (SSH keys, browser profiles, etc.).
+#
+# Verify binary paths on your system before enabling enforce mode:
+#   readlink /proc/$(pgrep sshd | head -1)/exe
+#   readlink /proc/$(pgrep sudo | head -1)/exe
+#
+# WARNING: /etc/shadow entries must include every binary that authenticates
+# users via PAM. A missing entry in enforce mode can lock users out.
+# Always validate with `--watch-only` first.
+
+# ── Password database ──────────────────────────────────────────────────────────
+
+[[watch]]
+name = "shadow"
+path = "/etc/shadow"
+allow_processes = [
+    "/usr/bin/passwd",       # password changes
+    "/usr/bin/su",           # user switching
+    "/usr/bin/sudo",         # privilege escalation
+    "/usr/bin/login",        # console login
+    "/usr/bin/newgrp",       # group switching
+    "/usr/sbin/sshd",        # SSH login via PAM
+    "/usr/sbin/unix_chkpwd", # PAM password verification helper
+]
+
+[[watch]]
+name = "gshadow"
+path = "/etc/gshadow"
+allow_processes = [
+    "/usr/bin/passwd",
+    "/usr/bin/newgrp",
+    "/usr/sbin/groupadd",
+    "/usr/sbin/groupmod",
+]
+
+# ── Privilege escalation config ────────────────────────────────────────────────
+
+[[watch]]
+name = "sudoers"
+path = "/etc/sudoers"
+allow_processes = [
+    "/usr/bin/sudo",
+    "/usr/sbin/visudo",
+]
+
+[[watch]]
+name = "sudoers-d"
+path = "/etc/sudoers.d"
+allow_processes = [
+    "/usr/bin/sudo",
+    "/usr/sbin/visudo",
+]
+recursive = true
+
+# ── SSH host keys ──────────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssh-host-keys"
+path = "/etc/ssh"
+# sshd reads host private keys (ssh_host_*_key) on startup.
+# Public keys (.pub) are not sensitive but fanotify marks the whole directory.
+allow_processes = [
+    "/usr/sbin/sshd",
+]
+recursive = true
+
+# ── TLS private keys ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "ssl-private"
+path = "/etc/ssl/private"
+# Add the processes that use your TLS certificates.
+# Run with --watch-only first to discover which processes access this path.
+allow_processes = [
+    # "/usr/sbin/nginx",
+    # "/usr/sbin/apache2",
+    # "/usr/lib/postfix/sbin/smtpd",
+]
+recursive = true
+
+# ── root credentials ───────────────────────────────────────────────────────────
+
+[[watch]]
+name = "root-ssh"
+path = "/root/.ssh"
+allow_processes = [
+    "/usr/bin/ssh",
+    "/usr/bin/ssh-agent",
+    "/usr/bin/ssh-add",
+    "/usr/bin/git",
+    "/usr/bin/scp",
+    "/usr/bin/sftp",
+]
+recursive = true
