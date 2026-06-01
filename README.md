@@ -143,6 +143,30 @@ sudo cerbera run \
 
 The two `ssh-keys` entries are merged: `home.toml` declares the path to watch, `debian.toml` contributes the allowed processes. On a different distro (e.g. NixOS), swap `debian.toml` for `nixos.toml` — `home.toml` stays unchanged.
 
+## Example configs
+
+The [`examples/`](examples/) directory contains ready-to-use presets:
+
+| File | Description |
+|---|---|
+| [`debian.toml`](examples/debian.toml) | Debian / Ubuntu — system paths (`/etc/shadow`, `sudoers`, SSH host keys, TLS private keys) |
+| [`fedora.toml`](examples/fedora.toml) | Fedora / RHEL / AlmaLinux / Rocky — same coverage, RHEL-specific paths (`/etc/pki/`) |
+| [`arch.toml`](examples/arch.toml) | Arch Linux — all binaries under `/usr/bin/`; no sbin distinction |
+| [`nixos.toml`](examples/nixos.toml) | NixOS — template with hash-qualified path placeholders; see note below |
+| [`home.toml`](examples/home.toml) | Per-user paths: SSH keys, browser profiles, password managers, cloud credentials |
+
+**Typical setup** — load an OS preset alongside your personal config:
+
+```bash
+sudo cerbera run \
+  --config /etc/cerbera/debian.toml \
+  --config /home/alice/.config/cerbera/home.toml
+```
+
+`allow_processes` entries from both files are merged per path, so OS-specific binary paths and personal path declarations stay in separate files.
+
+> **NixOS note:** executable paths in `/nix/store/` include a content hash that changes on every `nixos-rebuild switch`. Glob support in `allow_processes` is not yet implemented — run `cerbera learn` after each rebuild to regenerate the allow-list, or update the paths manually. See [`examples/nixos.toml`](examples/nixos.toml) for the path template.
+
 ## Scope
 
 **What cerbera protects against:**
