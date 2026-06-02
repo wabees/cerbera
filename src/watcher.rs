@@ -22,11 +22,8 @@ impl Watcher {
     pub fn add_watch(&self, watch: &Watch) -> Result<()> {
         let path = watch.resolved_path()?;
         if !path.exists() {
-            anyhow::bail!(
-                "watch `{}`: path does not exist: {}",
-                watch.name,
-                path.display()
-            );
+            warn!(watch = %watch.name, path = %path.display(), "path does not exist, skipping");
+            return Ok(());
         }
         let mask = MaskFlags::FAN_OPEN_PERM | MaskFlags::FAN_ACCESS_PERM;
 
