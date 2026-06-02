@@ -100,6 +100,8 @@ recursive = true                                     # mark subdirectories (defa
 
 `allow_processes` contains full executable paths. An empty list means **no process** may access the path in enforce mode. Use `readlink /proc/$$/exe` or `which <cmd>` to find the correct path on your system.
 
+If a `path` does not exist at startup, cerbera logs a warning and skips that entry — it does not abort. This lets you load example or shared configs that include paths not present on every machine.
+
 ## Commands
 
 | Command | Description |
